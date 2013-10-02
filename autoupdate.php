@@ -31,6 +31,7 @@ foreach ($reddit_children as $reddit_child){
     $title = $reddit_child['data']['title'];
 	$domain = $reddit_child['data']['domain'];
 	$redditThreadName = $reddit_child['data']['name'];
+	$redditThreadURL = $reddit_child['data']['permalink'];
 	
 	//skip self posts
 	if ($domain == "self.videos") continue;
@@ -60,7 +61,7 @@ foreach ($reddit_children as $reddit_child){
 		}		
 		
 		//build post body using iframe plugin to avoid missing iframe bug
-		$content = '<p style="text-align: center;">[iframe src="//www.youtube.com/embed/'.$videoID.'" width="100%"]</p><Br>Check out the original thread <a href="http://www.reddit.com/r/videos/comments/'.$redditThreadName.'" title="Go to reddit comments">here</a>. ';
+		$content = '<p style="text-align: center;">[iframe src="//www.youtube.com/embed/'.$videoID.'" width="100%"]</p><Br>Check out the original thread <a href="http://www.reddit.com/'.$redditThreadURL.'" title="Go to reddit comments">here</a>. ';
 	
 		//make the post
 		global $user_ID;
@@ -79,8 +80,8 @@ foreach ($reddit_children as $reddit_child){
 		echo " - Post made\n Title: ".$title."\nContent: ".$content;
 		
 		//post to twitter
-		
-		$twitter = new Twitter($consumerKey, $consumerSecret, $accessToken, $accessTokenSecret);
+		$cred = new credentials();
+		$twitter = new Twitter($cred->consumerKey, $cred->consumerSecret, $cred->accessToken, $cred->accessTokenSecret);
 		try {
 			$tweet = $twitter->send($title.' http://blogify.org/?p='.$post_id);
 			echo ".\n\ntweet sent.";
