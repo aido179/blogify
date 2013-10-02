@@ -44,11 +44,6 @@ foreach ($reddit_children as $reddit_child){
 	$string_youtube = file_get_contents("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&q=".$videoID,0,null,null);
 	$youtube_json = (object)json_decode($string_youtube, true); 
 	
-	
-	
-	//build post body using iframe plugin to avoid missing iframe bug
-	$content = '<p style="text-align: center;">[iframe src="//www.youtube.com/embed/'.$videoID.'" width="100%"]</p><Br>Check out the original thread <a href="http://www.reddit.com/r/videos/comments/'.$redditThreadName.'" title="Go to reddit comments">here</a>. ';
-	
 	//test if embeddable
 	$embedAllowed = $youtube_json->{'data'}['items']['0']['accessControl']['embed'];
 	if($embedAllowed == "allowed"){
@@ -62,8 +57,11 @@ foreach ($reddit_children as $reddit_child){
 			{
 				continue 2;
 			}
-		}
+		}		
 		
+		//build post body using iframe plugin to avoid missing iframe bug
+		$content = '<p style="text-align: center;">[iframe src="//www.youtube.com/embed/'.$videoID.'" width="100%"]</p><Br>Check out the original thread <a href="http://www.reddit.com/r/videos/comments/'.$redditThreadName.'" title="Go to reddit comments">here</a>. ';
+	
 		//make the post
 		global $user_ID;
 		$new_post = array(
@@ -75,6 +73,7 @@ foreach ($reddit_children as $reddit_child){
 		'post_type' => 'post',
 		'post_category' => array(0)
 		);
+		
 		//output for command line debug, no need to remove for production
 		echo $post_id = wp_insert_post($new_post);
 		echo " - Post made\n Title: ".$title."\nContent: ".$content;
