@@ -17,7 +17,10 @@ version 0.1.0
 *--- Wordpress installed in the root directory of the domain. ie, ../blogify
 *--- cron to run the script
 */
-
+include_once("blogify/wp-config.php");
+include_once("twitter.class.php");
+include_once("redditbot.php");
+include_once("credentials.php");
 
 //get reddit info
 $string_reddit = file_get_contents("http://reddit.com/r/videos.json");
@@ -27,23 +30,41 @@ $reddit_children = $reddit_json['data']['children'];
 foreach ($reddit_children as $reddit_child){
     $title = $reddit_child['data']['title'];
 	$domain = $reddit_child['data']['domain'];
+	$redditThreadName = $reddit_child['data']['name'];
+	
 	//skip self posts
 	if ($domain == "self.videos") continue;
+	
 	//get the video url and the youtube id 
 	$url = $reddit_child['data']['url'];
 	parse_str( parse_url( $url, PHP_URL_QUERY ), $my_array_of_vars );
 	$videoID = $my_array_of_vars['v']; 
+	
 	//get youtube info 
 	$string_youtube = file_get_contents("http://gdata.youtube.com/feeds/api/videos?v=2&alt=jsonc&q=".$videoID,0,null,null);
 	$youtube_json = (object)json_decode($string_youtube, true); 
+	
+	
+	
+	//build post body using iframe plugin to avoid missing iframe bug
+	$content = '<p style="text-align: center;">[iframe src="//www.youtube.com/embed/'.$videoID.'" width="100%"]</p><Br>Check out the original thread <a href="http://www.reddit.com/r/videos/comments/'.$redditThreadName.'" title="Go to reddit comments">here</a>. ';
+	
 	//test if embeddable
 	$embedAllowed = $youtube_json->{'data'}['items']['0']['accessControl']['embed'];
-	//build post body using iframe plugin to avoid missing iframe bug
-	$content = '<p style="text-align: center;">[iframe src="//www.youtube.com/embed/'.$videoID.'" width="100%"]</p>';
-	//if the video is embeddable...
 	if($embedAllowed == "allowed"){
+		//test if the same video has been posted recently
+		$args = array( 'numberposts' => '15' );
+		$recent_posts = wp_get_recent_posts( $args );
+		echo "testing\n";
+		foreach( $recent_posts as $recent ){
+			//echo $recent["post_title"] ." == ".$title."\n";
+			if (substr($recent["post_title"], 0, strlen($title)) == $title)
+			{
+				continue 2;
+			}
+		}
+		
 		//make the post
-		include_once("blogify/wp-config.php");
 		global $user_ID;
 		$new_post = array(
 		'post_title' => $title." [via reddit]",
@@ -57,6 +78,20 @@ foreach ($reddit_children as $reddit_child){
 		//output for command line debug, no need to remove for production
 		echo $post_id = wp_insert_post($new_post);
 		echo " - Post made\n Title: ".$title."\nContent: ".$content;
+		
+		//post to twitter
+		
+		$twitter = new Twitter($consumerKey, $consumerSecret, $accessToken, $accessTokenSecret);
+		try {
+			$tweet = $twitter->send($title.' http://blogify.org/?p='.$post_id);
+			echo ".\n\ntweet sent.";
+		} catch (TwitterException $e) {
+			echo '.\n\nError: ' . $e->getMessage();
+		}
+		
+		//make reddit post
+		makeRedditComment($redditThreadName,  'http://blogify.org/?p='.$post_id);
+		
 		//don't make any more posts
 		break;
 	}
