@@ -17,19 +17,17 @@ function makeRedditComment($threadName, $newURL){
 	$catURL = $vals[4]['value'];
 		
 	//build reply
-	$reply = "Hi, This video has been archived [here](".$newURL.") as the next top video on ".$date." GMT.
+	$reply = "This video link has been archived [here](".$newURL.") as the next top video on ".$date." GMT.
 	
-I'm a bot attempting to archive /r/videos so you can look back on them at a later date.  
-The full archive can be found [here](http://www.blogify.org).  
-More information about me can be found [here.](http://blogify.org/?page_id=132).  
-A picture of a cat can be found [here.](".$catURL.")  
-I'm open source, and my repository can be found [here.](https://github.com/aido179/blogify)";
+I archive the best of /r/videos so you can catch up after a weekend, look back on them at a later date, or if reddit goes down.
+[Full Archive](http://www.blogify.org) - [About the bot](http://blogify.org/?page_id=132) - [Github repo](https://github.com/aido179/blogify)
+
+Some people downvote this bot, I'm sorry if I irritate you. Here is a [cat](".$catURL.").";
 	
 	
 	//make reply
 	$response = $reddit->addComment($threadName, $reply);
 	file_put_contents("redditlog.txt",var_export($response, true));
-	echo "\nreddit post made.";
 }
 
 ?>
